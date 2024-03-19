@@ -1,14 +1,17 @@
-import config from "../../config/config.js";
+import config from "../../config/config";
+import {RefreshResponseType} from "../types/responsies/refresh-response.type";
+import {DefaultResponseType} from "../types/responsies/default-response.type";
+import {UserInfoType} from "../types/user-info.type";
 
 export class Auth {
-    static accessTokenKey = 'accessToken';
-    static refreshTokenKey = 'refreshToken';
-    static userInfoKey = 'userInfo';
+    static accessTokenKey: string = 'accessToken';
+    static refreshTokenKey: string = 'refreshToken';
+    static userInfoKey: string = 'userInfo';
 
-    static async processAuthorizeResponse() {
-        const refreshToken = localStorage.getItem(this.refreshTokenKey);
+    public static async processAuthorizeResponse(): Promise<boolean> {
+        const refreshToken: string | null = localStorage.getItem(this.refreshTokenKey);
         if (refreshToken) {
-            const response = await fetch(config.host + '/refresh', {
+            const response: Response = await fetch(config.host + '/refresh', {
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json',
@@ -17,9 +20,9 @@ export class Auth {
                 body: JSON.stringify({refreshToken: refreshToken})
             })
             if (response && response.status === 200) {
-                const result = await response.json();
-                if (result && !result.error) {
-                    this.setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+                const result: DefaultResponseType | RefreshResponseType = await response.json();
+                if ((result as RefreshResponseType) && !(result as DefaultResponseType).error) {
+                    this.setTokens((result as RefreshResponseType).tokens.accessToken, (result as RefreshResponseType).tokens.refreshToken);
                     return true
                 }
             }
@@ -30,11 +33,10 @@ export class Auth {
         return false
     }
 
-    static async logout() {
-
-        const refreshToken = localStorage.getItem(this.refreshTokenKey);
+    public static async logout(): Promise<boolean | undefined> {
+        const refreshToken: string | null = localStorage.getItem(this.refreshTokenKey);
         if (refreshToken) {
-            const response = await fetch(config.host + '/logout', {
+            const response: Response = await fetch(config.host + '/logout', {
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json',
@@ -43,7 +45,7 @@ export class Auth {
                 body: JSON.stringify({refreshToken: refreshToken})
             })
             if (response && response.status === 200) {
-                const result = await response.json();
+                const result: DefaultResponseType | null = await response.json();
                 if (result && !result.error) {
                     this.removeTokens();
                     localStorage.removeItem(this.userInfoKey);
@@ -51,22 +53,21 @@ export class Auth {
                 }
             }
         }
-
     }
-    static setTokens(accessToken, refreshToken) {
+    public static setTokens(accessToken: string, refreshToken: string): void {
         localStorage.setItem(this.accessTokenKey, accessToken);
         localStorage.setItem(this.refreshTokenKey, refreshToken);
     }
-    static removeTokens() {
+    public static removeTokens(): void {
         localStorage.removeItem(this.accessTokenKey);
         localStorage.removeItem(this.refreshTokenKey);
     }
 
-    static setUserInfo(info) {
+    public static setUserInfo(info: UserInfoType): void {
         localStorage.setItem(this.userInfoKey, JSON.stringify(info));
     }
 
-    static getUserInfo() {
+    public static getUserInfo(): UserInfoType | null {
         const userInfo = localStorage.getItem(this.userInfoKey);
         if (userInfo) {
             return JSON.parse(userInfo);

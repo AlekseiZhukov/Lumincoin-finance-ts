@@ -1,8 +1,14 @@
-import {CustomHttp} from "../services/custom-http.js";
-import config from "../../config/config.js";
+import {CustomHttp} from "../services/custom-http";
+import config from "../../config/config";
+import {PageType} from "../types/page.type";
+import {DefaultResponseType} from "../types/responsies/default-response.type";
 
 export class CreateModal {
-    constructor(page, idDeleting, callback) {
+    readonly page: PageType;
+    private modalElement: HTMLElement | null;
+    private idDeleting: number;
+    private callback: () => void;
+    constructor(page: PageType , idDeleting: number, callback: () => void) {
 
         this.page = page;
         this.modalElement = null;
@@ -11,57 +17,57 @@ export class CreateModal {
         this.init()
     }
 
-    init() {
+    private init(): void {
         this.modalElement = document.getElementById('staticBackdrop');
-        this.modalElement.replaceChildren();
+        if (this.modalElement) this.modalElement.replaceChildren();
         this.addModal(this.page)
     }
-    addModal (page) {
+    private addModal (page:PageType): void {
 
-        const that = this;
-        if (page === 'income' || page === 'expense' || page === 'income-and-expenses') {
+        const that: CreateModal = this;
+        if (page === PageType.income || page === PageType.expense || page === PageType.incomeAndExpenses) {
 
-            const modalDialogElement = document.createElement('div');
+            const modalDialogElement: HTMLElement | null = document.createElement('div');
             modalDialogElement.className = "modal-dialog modal-dialog-centered";
 
-            const modalContentElement = document.createElement('div');
+            const modalContentElement: HTMLElement | null = document.createElement('div');
             modalContentElement.className = "modal-content p-2";
 
-            const modalBodyElement = document.createElement('div');
+            const modalBodyElement: HTMLElement | null = document.createElement('div');
             modalBodyElement.className = "modal-body align-content-center";
 
-            const modalTitleElement = document.createElement('div');
+            const modalTitleElement: HTMLElement | null = document.createElement('div');
             modalTitleElement.className = "fs-4 text-center mb-4";
-            if (page === 'income') {
+            if (page === PageType.income) {
                 modalTitleElement.innerText = 'Вы действительно хотите удалить категорию? Связанные доходы будут удалены навсегда.';
-            } else if (page === 'expense') {
+            } else if (page === PageType.expense) {
                 modalTitleElement.innerText = 'Вы действительно хотите удалить категорию?';
             } else {
                 modalTitleElement.innerText = 'Вы действительно хотите удалить операцию?';
             }
 
-            const wrapButtonElement = document.createElement('div');
+            const wrapButtonElement: HTMLElement | null = document.createElement('div');
             wrapButtonElement.className = "d-flex align-items-center justify-content-around";
 
-            const successButtonElement = document.createElement('button');
+            const successButtonElement: HTMLElement | null = document.createElement('button');
             successButtonElement.className = "btn btn-success";
             successButtonElement.setAttribute('type', 'button');
             successButtonElement.setAttribute('data-bs-dismiss', 'modal');
             successButtonElement.innerText = 'Да, удалить';
             successButtonElement.addEventListener('click', async function () {
-                let queryString;
-                if (page === 'income') {
+                let queryString: string;
+                if (page === PageType.income) {
                     queryString = config.host + '/categories/income/';
-                } else if (page === 'expense') {
+                } else if (page === PageType.expense) {
                     queryString = config.host + '/categories/expense/';
                 } else {
                     queryString = config.host + '/operations/';
                 }
                try {
-                   const results = await CustomHttp.request(queryString + that.idDeleting, 'DELETE');
+                   const results: DefaultResponseType = await CustomHttp.request(queryString + that.idDeleting, 'DELETE');
                    if (results) {
                        if (results.error) {
-                           throw new Error(results.error);
+                           throw new Error(results.message);
                        }
                        that.callback()
                    } else {
@@ -72,7 +78,7 @@ export class CreateModal {
                 }
             })
 
-            const canselButtonElement = document.createElement('button');
+            const canselButtonElement: HTMLElement | null = document.createElement('button');
             canselButtonElement.className = "btn btn-danger";
             canselButtonElement.setAttribute('type', 'button');
             canselButtonElement.setAttribute('data-bs-dismiss', 'modal');
@@ -87,11 +93,10 @@ export class CreateModal {
             modalContentElement.appendChild(modalBodyElement);
 
             modalDialogElement.appendChild(modalContentElement);
-
-            this.modalElement.appendChild(modalDialogElement);
+            if (this.modalElement) this.modalElement.appendChild(modalDialogElement);
 
         } else {
-            return null
+            return
         }
     }
 }

@@ -1,13 +1,22 @@
-import {Sidebar} from "./components/sidebar.js";
-import {Main} from "./components/main.js";
-import {IncomeAndExpenses} from "./components/income-and-expenses.js";
-import {Form} from "./components/form.js";
-import {Auth} from "./services/auth.js";
-import {Categories} from "./components/categories.js";
+import {Sidebar} from "./components/sidebar";
+import {Main} from "./components/main";
+import {IncomeAndExpenses} from "./components/income-and-expenses";
+import {Form} from "./components/form";
+import {Auth} from "./services/auth";
+import {Categories} from "./components/categories";
 import {CreateEditIncomeAndExpenses} from "./components/create-edit-income-and-expenses";
-import {EditCreateCategoryCategory} from "./components/edit-create-category";
+import {EditCreateCategory} from "./components/edit-create-category";
+import {RouteType} from "./types/route.type";
+import {ActionsCategoriesType} from "./types/actions-categories.type";
+import {PageType} from "./types/page.type";
+import {UrlRouteType} from "./types/url-route.type";
 
 export class Router {
+    readonly layoutElement: HTMLElement | null;
+    private mainContentElement: HTMLElement | null;
+    readonly titleElement: HTMLElement | null;
+    private routes: RouteType[];
+
     constructor() {
 
         this.layoutElement = document.getElementById('content');
@@ -29,7 +38,7 @@ export class Router {
                 title: 'Регистрация',
                 template: 'templates/registration.html',
                 load: () => {
-                    new Form('signup');
+                    new Form(PageType.signup);
                 }
             },
             {
@@ -37,7 +46,7 @@ export class Router {
                 title: 'Авторизация',
                 template: 'templates/login.html',
                 load: () => {
-                    new Form('login');
+                    new Form(PageType.login);
                 }
             },
             {
@@ -46,7 +55,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/categories.html',
                 load: () => {
-                    new Categories('expense');
+                    new Categories(PageType.expense);
                 }
             },
             {
@@ -55,7 +64,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/categories.html',
                 load: () => {
-                    new Categories('income');
+                    new Categories(PageType.income);
                 }
             },
             {
@@ -64,7 +73,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/edit-create-category.html',
                 load: () => {
-                    new EditCreateCategoryCategory('expense');
+                    new EditCreateCategory(PageType.expense);
                 }
             },
             {
@@ -73,7 +82,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/edit-create-category.html',
                 load: () => {
-                    new EditCreateCategoryCategory('expense');
+                    new EditCreateCategory(PageType.expense);
                 }
             },
             {
@@ -82,7 +91,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/edit-create-category.html',
                 load: () => {
-                    new EditCreateCategoryCategory('income');
+                    new EditCreateCategory(PageType.income);
                 }
             },
             {
@@ -91,7 +100,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/edit-create-category.html',
                 load: () => {
-                    new EditCreateCategoryCategory('income');
+                    new EditCreateCategory(PageType.income);
                 }
             },
             {
@@ -109,7 +118,7 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/create-edit-income-and-expenses.html',
                 load: () => {
-                    new CreateEditIncomeAndExpenses('edit');
+                    new CreateEditIncomeAndExpenses(ActionsCategoriesType.edit);
                 }
             },
             {
@@ -118,17 +127,17 @@ export class Router {
                 template: 'templates/layout.html',
                 content: 'templates/create-edit-income-and-expenses.html',
                 load: () => {
-                    new CreateEditIncomeAndExpenses('create');
+                    new CreateEditIncomeAndExpenses(ActionsCategoriesType.create);
                 }
             },
         ]
     }
 
-    async openRoute() {
+    public async openRoute(): Promise<void> {
 
         document.body.style.overflow = 'auto'
-        const urlRoute = window.location.hash.split('?')[0];
-        if (urlRoute === '#/logout') {
+        const urlRoute: UrlRouteType = window.location.hash.split('?')[0] as UrlRouteType;
+        if (urlRoute === UrlRouteType.logout) {
             await Auth.logout();
             window.location.href = '#/login';
             return;
@@ -142,23 +151,29 @@ export class Router {
             window.location.href = '#/login';
             return
         }
-        this.layoutElement.innerHTML = await fetch(newRoute.template).then(response => response.text());
+        if (this.layoutElement) {
+            this.layoutElement.innerHTML = await fetch(newRoute.template).then(response => response.text());
+        }
 
-        if (urlRoute !== '#/login' && urlRoute !== '#/signup' ) {
-            const accessTokenKey = localStorage.getItem(Auth.accessTokenKey);
+        if (urlRoute !== UrlRouteType.login && urlRoute !== UrlRouteType.signup ) {
+            const accessTokenKey: string | null = localStorage.getItem(Auth.accessTokenKey);
             if (!accessTokenKey) {
                 window.location.href = '#/login';
+                return;
             } else {
                 new Sidebar(urlRoute)
             }
-
         }
 
         if (newRoute.content) {
             this.mainContentElement = document.getElementById('main-content');
-            this.mainContentElement.innerHTML = await fetch(newRoute.content).then(response => response.text());
+            if (this.mainContentElement) {
+                this.mainContentElement.innerHTML = await fetch(newRoute.content).then(response => response.text());
+            }
         }
-        this.titleElement.innerText = newRoute.title;
+        if(this.titleElement) {
+            this.titleElement.innerText = newRoute.title;
+        }
 
         newRoute.load();
     }
